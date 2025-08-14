@@ -1,0 +1,43 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    
+    - name: Run tests
+      run: pytest -q
+    
+    - name: Create artifact
+      run: |
+        mkdir -p artifact
+        cp -r proof/ artifact/
+        cp -r bench/ artifact/
+        cp README.md ACCEPTANCE.md LICENSE Makefile requirements.txt artifact/
+        cd artifact && zip -r ../artifact.zip .
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: artifact.zip
+        generate_release_notes: true
